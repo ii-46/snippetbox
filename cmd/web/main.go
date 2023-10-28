@@ -7,11 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"snippetbox.inthava.me/internal/models"
 )
 
 type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	snippets *models.SnippetModel
 }
 
 func main() {
@@ -29,6 +31,7 @@ func main() {
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		snippets: &models.SnippetModel{DB: db},
 	}
 	mux := app.routes()
 	infoLog.Printf("starting server at %v\n", *adrr)
