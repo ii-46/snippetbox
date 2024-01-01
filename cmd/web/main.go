@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	_ "github.com/go-sql-driver/mysql"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -11,13 +12,14 @@ import (
 )
 
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	snippets *models.SnippetModel
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	snippets      *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
-	adrr := flag.String("addr", ":4000", "network address")
+	addr := flag.String("addr", ":4000", "network address")
 	dsn := flag.String("dsn", "web1:pass@/snippetbox?parseTime=true", "MySQL data source name")
 	flag.Parse()
 
@@ -28,14 +30,19 @@ func main() {
 		errorLog.Fatal(err)
 	}
 	defer db.Close()
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		errorLog.Fatal(err)
+	}
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		snippets: &models.SnippetModel{DB: db},
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		snippets:      &models.SnippetModel{DB: db},
+		templateCache: templateCache,
 	}
 	mux := app.routes()
-	infoLog.Printf("starting server at %v\n", *adrr)
-	srv := &http.Server{Handler: mux, ErrorLog: errorLog, Addr: *adrr}
+	infoLog.Printf("starting server at %v\n", *addr)
+	srv := &http.Server{Handler: mux, ErrorLog: errorLog, Addr: *addr}
 	err = srv.ListenAndServe()
 	errorLog.Fatal(err)
 }
